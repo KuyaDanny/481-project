@@ -3,19 +3,23 @@
 %%        rel="license"
 %%        href="http://creativecommons.org/licenses/by/4.0/"
 %%        target="_blank">
+%%        Creative Commons Attribution 4.0 International License</a>
+%%
 %%
 %% These solutions are not intended to be ideal solutions. Instead,
 %% they are a solution that you can compare against yours to see
 %% other options and to come up with even better solutions.
--module(enter_center).
+-module(request_package_server).
 -behaviour(gen_server).
 
 %% API
--export([start_link/0,stop/0,set_friends_for/2]).
+-export([start_link/0,stop/0]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
 	 terminate/2, code_change/3]).
+
+% -export([get_package/1]).
 
 -define(SERVER, ?MODULE). 
 
@@ -45,13 +49,7 @@ start_link() ->
 %%--------------------------------------------------------------------
 stop() -> gen_server:call(?MODULE, stop).
 
-%%--------------------------------------------------------------------
-%% @doc
-%% Stops the server gracefully
-%% @spec start -> {ok, Pid} | ignore | {error, Error}
-%% @end
-%%--------------------------------------------------------------------
-set_friends_for(Name,Friends)-> gen_server:call(?MODULE, {friends_for,Name,Friends}).
+% get_friends_of(Name)-> gen_server:call(?MODULE, {friends_of,Name}).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -69,14 +67,15 @@ set_friends_for(Name,Friends)-> gen_server:call(?MODULE, {friends_for,Name,Frien
 %% @end
 %%--------------------------------------------------------------------
 init([]) ->
-	riakc_pb_socket:start_link("rdb.fordark.org", 8087).
+	%{Success, Riak_PID} = riakc_pb_socket:start_link("rdb.fordark.org", 8087).
+    	case riakc_pb_socket:start_link("rdb.fordark.org", 8087) of 
+	     {ok,Riak_Pid} -> {ok,Riak_Pid};
+	     _ -> {stop,link_failure}
+	end.
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
-%% Handling call messages. The Request parameter is a tuple
-%% consisting of a command, a binary that is the name of the person 
-%% for which friends are to be stored, and a binary that is a list 
-%% of friends. Both of these binaries can be created using term_to_binary.
+%% Handling call messages
 %%
 %% @spec handle_call(Request, From, State) ->
 %%                                   {reply, Reply, State} |
@@ -87,22 +86,32 @@ init([]) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_call({enter_center,{Package_id, Center_id, Time}}, _From, Riak_PID) ->
-    % //this will call buffer_api:some_function;
-    {Result} = buffer_api:enter_center(Package_id, Center_id, Time, Riak_PID),
-    {reply, Result, Riak_PID}; % return all the things we want. {reply, registered, Riak_Pid}
+handle_call(request_location, _From, {Package_id, _Riak_PID}) when not is_list(Package_id) ->
+	throw({badarg, {request_location, Package_id}});
 
-handle_call({enter_center, _Arg}, _From, Riak_PID) -> 
-    {reply,bad_arg,Riak_PID};
 
-handle_call({_Cmd, _Arg}, _From, Riak_PID) -> 
-    {reply,bad_command,Riak_PID};
 
-handle_call(stop, _From, _State) ->
-	{stop,normal,
-                server_stopped,
-          down}. %% setting the server's internal state to down
+handle_call(request_location, _From, {Package_id, Riak_PID}) ->
+	
+	{Vehicle_id, History} = riak_api:get_package(Package_id, Riak_PID),
+	{Lat, Lon} = riak_api:get_vehicle(Vehicle_id, Riak_PID),
+	{Eta} = riak_api:get_eta(Package_id, Riak_PID),
+	{reply, {Lat, Lon, Eta, History}};
 
+
+handle_call(Cmd, _From, {Package_id, _Riak_PID}) ->
+	throw({badcommand, {Cmd, Package_id}}).
+
+
+
+    % 	{reply,<<bob,sue,alice>>,Riak_PID};
+	% case riakc_pb_socket:get(Riak_PID, <<"friends">>, Name) of 
+	%     {ok,Fetched}->
+	% 	reply with the value as a binary, not the key nor the bucket.
+	% 	{reply,binary_to_term(riakc_obj:get_value(Fetched)),Riak_PID};
+	%      Error ->
+	% 	{reply,Error,Riak_PID}
+	% end;
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
@@ -157,28 +166,43 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
--ifdef(EUNIT).
-  -include_lib("eunit/include/eunit.hrl").
 
-handle_call_test_() ->
+
+
+
+
+
+
+
+
+
+%%%===================================================================
+%%% Eunit Tests
+%%%===================================================================
+-ifdef(EUNIT).
+ -include_lib("eunit/include/eunit.hrl").
+handle_update_test_()->
     {setup,
-        fun()-> 
-			meck:new(buffer_api),
-			meck:expect(buffer_api, enter_center, fun(Package_id, Center_id, Time, Riak_PID) -> {arrived} end)
+		fun()-> 
+			meck:new(riak_api),
+			meck:expect(riak_api, get_package, fun(Package_id,Riak_PID) -> {vehicle, history} end),
+			meck:expect(riak_api, get_vehicle, fun(Vehicle_id, Riak_PID) -> {lat, lon} end),
+			meck:expect(riak_api, get_eta, fun(Package_id, Riak_PID) -> {eta} end)
 		end,
 		fun(_)-> 
-			meck:unload(buffer_api)
+			meck:unload(riak_api)
 		end,
-    [%This is the list of tests to be generated and run.
-        ?_assertEqual({reply,arrived,some_riak_pid},
-                            enter_center:handle_call({enter_center,{"package88A","center 13", 400}}, some_from_pid, some_riak_pid)),
-        ?_assertEqual({reply,arrived,some_riak_pid},
-                            enter_center:handle_call({enter_center,{"package54B","center 12",""}}, some_from_pid, some_riak_pid)),
-        ?_assertEqual({reply,bad_arg,some_riak_pid},
-                            enter_center:handle_call({enter_center,{"",[]}}, some_from_pid, some_riak_pid)),
-        ?_assertEqual({reply,bad_command,some_riak_pid},
-                            enter_center:handle_call({sticks,{"",[]}}, some_from_pid, some_riak_pid))
-    ]}.
-%
+	[
+        ?_assertEqual({reply,
+            {lat, lon, eta, history}},
+        request_package_server:handle_call(request_location, somewhere, {"123", riakpid})),
 
-  -endif.
+        ?_assertThrow({badcommand,
+			{mojave_desert, "123"}},
+        request_package_server:handle_call(mojave_desert, somewhere, {"123", riakpid})),
+
+		?_assertThrow({badarg,
+		{request_location, badjunkatom}},
+        request_package_server:handle_call(request_location, somewhere, {badjunkatom, riakpid}))
+	]}.
+-endif.
