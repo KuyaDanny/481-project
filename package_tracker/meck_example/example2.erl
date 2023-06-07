@@ -7,19 +7,19 @@
 %% These solutions are not intended to be ideal solutions. Instead,
 %% they are a solution that you can compare against yours to see
 %% other options and to come up with even better solutions.
--module(enter_center).
+-module(update_vehicle_location_server).
 -behaviour(gen_server).
 
 %% API
--export([start_link/0,stop/0,set_friends_for/2]).
+-export([start_link/0,stop/0]).
 
-%% gen_server callbacks
+% %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
 	 terminate/2, code_change/3]).
 
 -define(SERVER, ?MODULE). 
 
-%-record(state, {}).
+% -record(state, {}).
 
 %%%===================================================================
 %%% API
@@ -51,7 +51,7 @@ stop() -> gen_server:call(?MODULE, stop).
 %% @spec start -> {ok, Pid} | ignore | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
-set_friends_for(Name,Friends)-> gen_server:call(?MODULE, {friends_for,Name,Friends}).
+% set_friends_for(Name,Friends)-> gen_server:call(?MODULE, {friends_for,Name,Friends}).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -87,10 +87,12 @@ init([]) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_call({friends_for,B_name,B_friends}, _From, Riak_Pid) ->
-	Request=riakc_obj:new(<<"friends">>, B_name, B_friends),
-	{reply,riakc_pb_socket:put(Riak_Pid, Request),Riak_Pid};
-handle_call(stop, _From, _State) ->
+handle_call(some_atom, _From, {Package_UUID, Location_UUID, Time}) ->
+	% Request=riakc_obj:new(<<"friends">>, B_name, B_friends),
+	% {reply,riakc_pb_socket:put(Riak_Pid, Request),Riak_Pid};
+
+    ok;
+handle_call(_, _From, {Package_UUID, Location_UUID, Time}) ->
 	{stop,normal,
                 server_stopped,
           down}. %% setting the server's internal state to down
@@ -105,8 +107,21 @@ handle_call(stop, _From, _State) ->
 %%                                  {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_cast(_Msg, State) ->
-    {noreply, State}.
+handle_cast({Vehicle_id, Lat, Lon, Time, Riak_PID}, _State) when not is_list(Vehicle_id) ->
+    throw({badarg, {Vehicle_id, Lat, Lon, Time, Riak_PID}});
+
+handle_cast({Vehicle_id, Lat, Lon, Time, Riak_PID}, _State) when not is_number(Lat) ->
+    throw({badarg, {Vehicle_id, Lat, Lon, Time, Riak_PID}});
+
+handle_cast({Vehicle_id, Lat, Lon, Time, Riak_PID}, _State) when not is_number(Lon) ->
+    throw({badarg, {Vehicle_id, Lat, Lon, Time, Riak_PID}});
+
+handle_cast({Vehicle_id, Lat, Lon, Time, Riak_PID}, _State) when not is_number(Time) ->
+    throw({badarg, {Vehicle_id, Lat, Lon, Time, Riak_PID}});
+
+handle_cast({Vehicle_id, Lat, Lon, Time, Riak_PID}, _State) ->
+    riak_api:put_vehicle_location(Vehicle_id, Lat, Lon, Time, Riak_PID),
+    {noreply, []}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -149,29 +164,46 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+
+
+%%%===================================================================
+%%% Eunit Tests
+%%%===================================================================
 -ifdef(EUNIT).
-  -include_lib("eunit/include/eunit.hrl").
+    -include_lib("eunit/include/eunit.hrl").
+handle_update_test_()->
+    {setup,
+		fun()-> 
+			meck:new(riak_api),
+			meck:expect(riak_api, get_package, fun(_Package_id, Riak_PID) -> {vehicle, history} end),
+			meck:expect(riak_api, get_vehicle, fun(_Vehicle_id, Riak_PID) -> {lat, lon} end),
+			meck:expect(riak_api, get_eta, fun(_Package_id, Riak_PID) -> eta end),
+			meck:expect(riak_api, put_vehicle_location, fun(_Vehicle_id, _Lat, _Lon, _Time, Riak_PID) -> ok end)
+		end,
+		fun(_)-> 
+			meck:unload(riak_api)
+		end,
+    [
+        ?_assertEqual({noreply, []},
+        update_vehicle_location_server:handle_cast(
+        {"123",35.0110, 115.4734, 0, riakpid}, [])),
 
-handle_call_test_()->
-  [?_assertEqual({reply,
-                {ok,[joe,sally,grace]},
-           [joe,sally,grace]},friends_storage:handle_call(list,somewhere,[joe,sally,grace]))%happy path
-   ].
+        ?_assertThrow({badarg, {"123",35.0110, dogfarmer, 0, riakpid}},
+        update_vehicle_location_server:handle_cast(
+        {"123",35.0110, dogfarmer, 0, riakpid}, [])), %% Error Path
 
-	% handle_cast_test_()->
-	% 	[?_assertEqual({noreply,[sue,joe,sally]},friends_storage:handle_cast({add,sue},[joe,sally])),%happy path
-	%    ?_assertEqual({noreply,[sue]},friends_storage:handle_cast({add,sue},[])),%nasty path
-	%    ?_assertEqual({noreply,[sue]},friends_storage:handle_cast({add,sue},nil)),%nasty path
-	% 	 ?_assertEqual({noreply,
-	%                 ok,
-	%            [joe,grace]},friends_storage:handle_cast({remove,sally},[joe,sally,grace]))%happy path
+        ?_assertThrow({badarg, {"123",badatom, 115.4734, 0, riakpid}},
+        update_vehicle_location_server:handle_cast(
+        {"123",badatom, 115.4734, 0, riakpid}, [])), %% Error Path
 
-	% 	].
-%component_level_test_()->{
-%  setup,
-%  fun()->gen_server:start_link({local, ?SERVER}, ?MODULE, [], []) end,
-%  fun()->gen_server:call(?SERVER, stop) end,
-%  [?_assertEqual(true,true)]}.
-%
+        ?_assertThrow({badarg, {oopsallberries, 35.0110, 115.4734, 0, riakpid}},
+        update_vehicle_location_server:handle_cast(
+        {oopsallberries,35.0110, 115.4734, 0, riakpid}, [])), %% Error Path
 
-  -endif.
+        ?_assertThrow({badarg, {"123",35.0110, 115.4734, argh, riakpid}},
+        update_vehicle_location_server:handle_cast(
+        {"123",35.0110, 115.4734, argh, riakpid}, []))
+
+
+    ]}.
+-endif.
