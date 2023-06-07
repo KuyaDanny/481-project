@@ -172,5 +172,6 @@ handle_call_test_()->
 %  fun()->gen_server:start_link({local, ?SERVER}, ?MODULE, [], []) end,
 %  fun()->gen_server:call(?SERVER, stop) end,
 %  [?_assertEqual(true,true)]}.
+%
 
   -endif.
