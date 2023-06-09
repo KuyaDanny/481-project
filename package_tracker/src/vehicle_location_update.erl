@@ -11,7 +11,7 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/0,stop/0,set_friends_for/2]).
+-export([start_link/0,stop/0,update/3]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -51,7 +51,7 @@ stop() -> gen_server:call(?MODULE, stop).
 %% @spec start -> {ok, Pid} | ignore | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
-set_friends_for(Name,Friends)-> gen_server:call(?MODULE, {friends_for,Name,Friends}).
+update(Vehicle_id, Latitude, Longitude)-> gen_server:cast(?MODULE, {vehicle_location_update, {Vehicle_id, Latitude, Longitude}}).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -69,7 +69,7 @@ set_friends_for(Name,Friends)-> gen_server:call(?MODULE, {friends_for,Name,Frien
 %% @end
 %%--------------------------------------------------------------------
 init([]) ->
-	riakc_pb_socket:start_link("rdb.fordark.org", 8087).
+	riakc_pb_socket:start_link("rdb.fordark.org", 8087). % TODO change
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
@@ -87,9 +87,6 @@ init([]) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_call({friends_for,B_name,B_friends}, _From, Riak_Pid) ->
-	Request=riakc_obj:new(<<"friends">>, B_name, B_friends),
-	{reply,riakc_pb_socket:put(Riak_Pid, Request),Riak_Pid};
 handle_call(stop, _From, _State) ->
 	{stop,normal,
                 server_stopped,
@@ -105,8 +102,20 @@ handle_call(stop, _From, _State) ->
 %%                                  {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
+handle_cast({vehicle_location_update, {Vehicle_id, Lat, Lon}}, Riak_PID) when is_list(Vehicle_id) 
+                                                                        andalso is_number(Lat) 
+                                                                        andalso is_number(Lon) ->
+    {_Result} = buffer_api:vehicle_location_update(Vehicle_id, Lat, Lon, Riak_PID),
+    {noreply, Riak_PID};
+
+handle_cast({vehicle_location_update, _Args}, State) ->
+    {reply, bad_arg, State};
+
 handle_cast(_Msg, State) ->
-    {noreply, State}.
+    {reply, bad_message, State}.
+
+% takes in vehicle_id, lat, and lon. Lat and lon are reals, and Vehicle_id is string.
+% handle: 'when' Lat is numb andalso Lon isNum andalso  isString(Vehicle_id)
 
 %%--------------------------------------------------------------------
 %% @private
@@ -152,21 +161,26 @@ code_change(_OldVsn, State, _Extra) ->
 -ifdef(EUNIT).
   -include_lib("eunit/include/eunit.hrl").
 
-handle_call_test_()->
-  [?_assertEqual({reply,
-                {ok,[joe,sally,grace]},
-           [joe,sally,grace]},friends_storage:handle_call(list,somewhere,[joe,sally,grace]))%happy path
-   ].
-
-	% handle_cast_test_()->
-	% 	[?_assertEqual({noreply,[sue,joe,sally]},friends_storage:handle_cast({add,sue},[joe,sally])),%happy path
-	%    ?_assertEqual({noreply,[sue]},friends_storage:handle_cast({add,sue},[])),%nasty path
-	%    ?_assertEqual({noreply,[sue]},friends_storage:handle_cast({add,sue},nil)),%nasty path
-	% 	 ?_assertEqual({noreply,
-	%                 ok,
-	%            [joe,grace]},friends_storage:handle_cast({remove,sally},[joe,sally,grace]))%happy path
-
-	% 	].
+handle_cast_test_() ->
+    {setup,
+        fun()-> 
+			meck:new(buffer_api),
+			meck:expect(buffer_api, vehicle_location_update, fun(Vehicle_id, Lat, Lon, Riak_PID) -> {worked} end)
+		end,
+		fun(_)-> 
+			meck:unload(buffer_api)
+		end,
+    [%This is the list of tests to be generated and run.
+        ?_assertEqual({noreply, some_riak_pid},
+                            vehicle_location_update:handle_cast({vehicle_location_update,{"vehicle2800", 11, 10.94}}, some_riak_pid)),
+        ?_assertEqual({noreply,some_riak_pid},
+                            vehicle_location_update:handle_cast({vehicle_location_update,{"302jdja947", 420, 420}}, some_riak_pid)),
+        ?_assertEqual({reply,bad_arg,some_riak_pid},
+                            vehicle_location_update:handle_cast({vehicle_location_update,{"MagicSchoolBus", mojave_desert}}, some_riak_pid)),
+        ?_assertEqual({reply,bad_message,some_riak_pid},
+                            vehicle_location_update:handle_cast({game_over}, some_riak_pid))
+    ]}.
+%  
 %component_level_test_()->{
 %  setup,
 %  fun()->gen_server:start_link({local, ?SERVER}, ?MODULE, [], []) end,

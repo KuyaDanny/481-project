@@ -11,7 +11,7 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/0,stop/0,set_friends_for/2]).
+-export([start_link/0,stop/0,enter/3]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -51,7 +51,7 @@ stop() -> gen_server:call(?MODULE, stop).
 %% @spec start -> {ok, Pid} | ignore | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
-set_friends_for(Name,Friends)-> gen_server:call(?MODULE, {friends_for,Name,Friends}).
+enter(Package_id, Center_id, Time)-> gen_server:call(?MODULE, {enter_center, {Package_id, Center_id, Time}}).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -69,7 +69,7 @@ set_friends_for(Name,Friends)-> gen_server:call(?MODULE, {friends_for,Name,Frien
 %% @end
 %%--------------------------------------------------------------------
 init([]) ->
-	riakc_pb_socket:start_link("rdb.fordark.org", 8087).
+	riakc_pb_socket:start_link("rdb.fordark.org", 8087). %TODO change this
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
@@ -180,5 +180,11 @@ handle_call_test_() ->
                             enter_center:handle_call({sticks,{"",[]}}, some_from_pid, some_riak_pid))
     ]}.
 %
+%component_level_test_()->{
+%  setup,
+%  fun()->gen_server:start_link({local, ?SERVER}, ?MODULE, [], []) end,
+%  fun()->gen_server:call(?SERVER, stop) end,
+%  [?_assertEqual(true,true)]}.
 
+    
   -endif.

@@ -11,7 +11,7 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/0,stop/0,set_friends_for/2]).
+-export([start_link/0,stop/0,req_loc/1]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -51,7 +51,7 @@ stop() -> gen_server:call(?MODULE, stop).
 %% @spec start -> {ok, Pid} | ignore | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
-set_friends_for(Name,Friends)-> gen_server:call(?MODULE, {friends_for,Name,Friends}).
+req_loc(Package_id)-> gen_server:call(?MODULE, {request_location,{Package_id}}).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -69,7 +69,7 @@ set_friends_for(Name,Friends)-> gen_server:call(?MODULE, {friends_for,Name,Frien
 %% @end
 %%--------------------------------------------------------------------
 init([]) ->
-	riakc_pb_socket:start_link("rdb.fordark.org", 8087).
+	riakc_pb_socket:start_link("rdb.fordark.org", 8087). % TODO change
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
@@ -87,9 +87,18 @@ init([]) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_call({friends_for,B_name,B_friends}, _From, Riak_Pid) ->
-	Request=riakc_obj:new(<<"friends">>, B_name, B_friends),
-	{reply,riakc_pb_socket:put(Riak_Pid, Request),Riak_Pid};
+handle_call({request_location,{Package_id}}, _From, Riak_PID) ->
+    % //this will call buffer_api:some_function;
+    {Lat, Lon, Eta, History} = buffer_api:request_location(Package_id, Riak_PID),
+    % io:format(Result),
+    {reply, {Lat, Lon, Eta, History}, Riak_PID}; % return all the things we want
+
+handle_call({request_location, _Arg}, _From, Riak_PID) -> 
+    {reply,bad_arg,Riak_PID};
+
+handle_call({_Cmd, _Arg}, _From, Riak_PID) -> 
+    {reply,bad_command,Riak_PID};
+
 handle_call(stop, _From, _State) ->
 	{stop,normal,
                 server_stopped,
@@ -152,48 +161,30 @@ code_change(_OldVsn, State, _Extra) ->
 -ifdef(EUNIT).
   -include_lib("eunit/include/eunit.hrl").
 
-handle_call_test_()->
-  [?_assertEqual({reply,
-                {ok,[joe,sally,grace]},
-           [joe,sally,grace]},friends_storage:handle_call(list,somewhere,[joe,sally,grace]))%happy path
-   ].
-
-	% handle_cast_test_()->
-	% 	[?_assertEqual({noreply,[sue,joe,sally]},friends_storage:handle_cast({add,sue},[joe,sally])),%happy path
-	%    ?_assertEqual({noreply,[sue]},friends_storage:handle_cast({add,sue},[])),%nasty path
-	%    ?_assertEqual({noreply,[sue]},friends_storage:handle_cast({add,sue},nil)),%nasty path
-	% 	 ?_assertEqual({noreply,
-	%                 ok,
-	%            [joe,grace]},friends_storage:handle_cast({remove,sally},[joe,sally,grace]))%happy path
-
-	% 	].
+handle_call_test_() ->
+    {setup,
+        fun()-> 
+			meck:new(buffer_api),
+			meck:expect(buffer_api, request_location, fun(Package_id, Riak_PID) -> {lat, lon, eta, history} end)
+		end,
+		fun(_)-> 
+			meck:unload(buffer_api)
+		end,
+    [%This is the list of tests to be generated and run.
+        ?_assertEqual({reply,{lat, lon, eta, history},some_riak_pid},
+                            request_location:handle_call({request_location,{"package88A"}}, some_from_pid, some_riak_pid)),
+        ?_assertEqual({reply,{lat, lon, eta, history},some_riak_pid},
+                            request_location:handle_call({request_location,{"package54B"}}, some_from_pid, some_riak_pid)),
+        ?_assertEqual({reply,bad_arg,some_riak_pid},
+                            request_location:handle_call({request_location,{}}, some_from_pid, some_riak_pid)),
+        ?_assertEqual({reply,bad_command,some_riak_pid},
+                            mark_delivered:handle_call({find_path,{"delivered_to_the"}}, some_from_pid, some_riak_pid))
+    ]}.
+%  
 %component_level_test_()->{
 %  setup,
 %  fun()->gen_server:start_link({local, ?SERVER}, ?MODULE, [], []) end,
 %  fun()->gen_server:call(?SERVER, stop) end,
 %  [?_assertEqual(true,true)]}.
-
-silly_test_() ->
-    {setup,
-     fun() -> %this setup fun is run once befor the tests are run. If you want setup and teardown to run for each test, change {setup to {foreach
-        meck:new(riakc_obj), %% Dont include riak here, put buffer functions
-        meck:new(riakc_pb_socket),
-        meck:expect(riakc_obj, new, fun(Bucket,Key,Value) -> done end),
-        meck:expect(riakc_pb_socket, put, fun(Riak_pid,Request) -> worked end)
-        
-     end,
-     fun(_) ->%This is the teardown fun. Notice it takes one, ignored in this example, parameter.
-        meck:unload(riakc_obj),
-        meck:unload(riakc_pb_socket)
-     end,
-    [%This is the list of tests to be generated and run.
-        ?_assertEqual({reply,worked,some_riak_pid},
-                            silly_mock:handle_call({friends_for,<<"sally">>,[]}, some_from_pid, some_riak_pid)),
-        ?_assertEqual({reply,worked,some_riak_pid},
-                            silly_mock:handle_call({friends_for,<<"fred">>,[<<"sue">>,<<"joe">>]}, some_from_pid, some_riak_pid)
-                                ),
-        ?_assertEqual({reply,{fail,empty_key},some_riak_pid},
-                            silly_mock:handle_call({friends_for,<<"">>,[]}, some_from_pid, some_riak_pid))
-    ]}.
     
 -endif.

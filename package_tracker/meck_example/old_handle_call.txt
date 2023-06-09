@@ -1,0 +1,7 @@
+handle_call({friends_for,B_name,B_friends}, _From, Riak_Pid) ->
+	Request=riakc_obj:new(<<"friends">>, B_name, B_friends),
+	{reply,riakc_pb_socket:put(Riak_Pid, Request),Riak_Pid};
+handle_call(stop, _From, _State) ->
+	{stop,normal,
+                server_stopped,
+          down}. %% setting the server's internal state to down

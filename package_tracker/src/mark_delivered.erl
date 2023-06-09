@@ -11,7 +11,7 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/0,stop/0,set_friends_for/2]).
+-export([start_link/0,stop/0,mark/2]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -51,7 +51,7 @@ stop() -> gen_server:call(?MODULE, stop).
 %% @spec start -> {ok, Pid} | ignore | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
-set_friends_for(Name,Friends)-> gen_server:call(?MODULE, {friends_for,Name,Friends}).
+mark(Package_id,Time)-> gen_server:call(?MODULE, {mark_delivered,{Package_id, Time}}).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -69,7 +69,7 @@ set_friends_for(Name,Friends)-> gen_server:call(?MODULE, {friends_for,Name,Frien
 %% @end
 %%--------------------------------------------------------------------
 init([]) ->
-	riakc_pb_socket:start_link("rdb.fordark.org", 8087).
+	riakc_pb_socket:start_link("rdb.fordark.org", 8087). %TODO change
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
@@ -87,9 +87,17 @@ init([]) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_call({friends_for,B_name,B_friends}, _From, Riak_Pid) ->
-	Request=riakc_obj:new(<<"friends">>, B_name, B_friends),
-	{reply,riakc_pb_socket:put(Riak_Pid, Request),Riak_Pid};
+handle_call({mark_delivered,{Package_id, Time}}, _From, Riak_PID) ->
+    % //this will call buffer_api:some_function;
+    {Result} = buffer_api:mark_delivered(Package_id, Time, Riak_PID),
+    {reply, Result, Riak_PID}; % return all the things we want. {reply, registered, Riak_Pid}
+
+handle_call({mark_delivered, _Arg}, _From, Riak_PID) -> 
+    {reply,bad_arg,Riak_PID};
+
+handle_call({_Cmd, _Arg}, _From, Riak_PID) -> 
+    {reply,bad_command,Riak_PID};
+
 handle_call(stop, _From, _State) ->
 	{stop,normal,
                 server_stopped,
@@ -152,21 +160,26 @@ code_change(_OldVsn, State, _Extra) ->
 -ifdef(EUNIT).
   -include_lib("eunit/include/eunit.hrl").
 
-handle_call_test_()->
-  [?_assertEqual({reply,
-                {ok,[joe,sally,grace]},
-           [joe,sally,grace]},friends_storage:handle_call(list,somewhere,[joe,sally,grace]))%happy path
-   ].
-
-	% handle_cast_test_()->
-	% 	[?_assertEqual({noreply,[sue,joe,sally]},friends_storage:handle_cast({add,sue},[joe,sally])),%happy path
-	%    ?_assertEqual({noreply,[sue]},friends_storage:handle_cast({add,sue},[])),%nasty path
-	%    ?_assertEqual({noreply,[sue]},friends_storage:handle_cast({add,sue},nil)),%nasty path
-	% 	 ?_assertEqual({noreply,
-	%                 ok,
-	%            [joe,grace]},friends_storage:handle_cast({remove,sally},[joe,sally,grace]))%happy path
-
-	% 	].
+handle_call_test_() ->
+    {setup,
+        fun()-> 
+			meck:new(buffer_api),
+			meck:expect(buffer_api, mark_delivered, fun(Package_id, Time, Riak_PID) -> {delivered} end)
+		end,
+		fun(_)-> 
+			meck:unload(buffer_api)
+		end,
+    [%This is the list of tests to be generated and run.
+        ?_assertEqual({reply,delivered,some_riak_pid},
+                            mark_delivered:handle_call({mark_delivered,{"package88A", 400}}, some_from_pid, some_riak_pid)),
+        ?_assertEqual({reply,delivered,some_riak_pid},
+                            mark_delivered:handle_call({mark_delivered,{"package54B", ""}}, some_from_pid, some_riak_pid)),
+        ?_assertEqual({reply,bad_arg,some_riak_pid},
+                            mark_delivered:handle_call({mark_delivered,{[]}}, some_from_pid, some_riak_pid)),
+        ?_assertEqual({reply,bad_command,some_riak_pid},
+                            mark_delivered:handle_call({mojave_desert,located_in_the}, some_from_pid, some_riak_pid))
+    ]}.
+%  
 %component_level_test_()->{
 %  setup,
 %  fun()->gen_server:start_link({local, ?SERVER}, ?MODULE, [], []) end,
