@@ -89,9 +89,9 @@ init([]) ->
 %%--------------------------------------------------------------------
 handle_call({request_location,{Package_id}}, _From, Riak_PID) ->
     % //this will call buffer_api:some_function;
-    {Lat, Lon, Eta, History} = buffer_api:request_location(Package_id, Riak_PID),
+    {Lat, Lon, History} = buffer_api:request_location(Package_id, Riak_PID),
     % io:format(Result),
-    {reply, {Lat, Lon, Eta, History}, Riak_PID}; % return all the things we want
+    {reply, {Lat, Lon,  History}, Riak_PID}; % return all the things we want
 
 handle_call({request_location, _Arg}, _From, Riak_PID) -> 
     {reply,bad_arg,Riak_PID};
@@ -165,15 +165,15 @@ handle_call_test_() ->
     {setup,
         fun()-> 
 			meck:new(buffer_api),
-			meck:expect(buffer_api, request_location, fun(Package_id, Riak_PID) -> {lat, lon, eta, history} end)
+			meck:expect(buffer_api, request_location, fun(Package_id, Riak_PID) -> {lat, lon, history} end)
 		end,
 		fun(_)-> 
 			meck:unload(buffer_api)
 		end,
     [%This is the list of tests to be generated and run.
-        ?_assertEqual({reply,{lat, lon, eta, history},some_riak_pid},
+        ?_assertEqual({reply,{lat, lon, history},some_riak_pid},
                             request_location:handle_call({request_location,{"package88A"}}, some_from_pid, some_riak_pid)),
-        ?_assertEqual({reply,{lat, lon, eta, history},some_riak_pid},
+        ?_assertEqual({reply,{lat, lon, history},some_riak_pid},
                             request_location:handle_call({request_location,{"package54B"}}, some_from_pid, some_riak_pid)),
         ?_assertEqual({reply,bad_arg,some_riak_pid},
                             request_location:handle_call({request_location,{}}, some_from_pid, some_riak_pid)),

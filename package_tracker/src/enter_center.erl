@@ -51,7 +51,7 @@ stop() -> gen_server:call(?MODULE, stop).
 %% @spec start -> {ok, Pid} | ignore | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
-enter(Package_id, Center_id, Time)-> gen_server:call(?MODULE, {enter_center, {Package_id, Center_id, Time}}).
+enter(Package_id, Location_id, Time)-> gen_server:call(?MODULE, {enter_center, {Package_id, Location_id, Time}}).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -87,9 +87,9 @@ init([]) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_call({enter_center,{Package_id, Center_id, Time}}, _From, Riak_PID) ->
+handle_call({enter_center,{Package_id, Location_id, Time}}, _From, Riak_PID) ->
     % //this will call buffer_api:some_function;
-    {Result} = buffer_api:enter_center(Package_id, Center_id, Time, Riak_PID),
+    {Result} = buffer_api:enter_center(Package_id, Location_id, Time, Riak_PID),
     {reply, Result, Riak_PID}; % return all the things we want. {reply, registered, Riak_Pid}
 
 handle_call({enter_center, _Arg}, _From, Riak_PID) -> 
@@ -164,7 +164,7 @@ handle_call_test_() ->
     {setup,
         fun()-> 
 			meck:new(buffer_api),
-			meck:expect(buffer_api, enter_center, fun(Package_id, Center_id, Time, Riak_PID) -> {arrived} end)
+			meck:expect(buffer_api, enter_center, fun(Package_id, Location_id, Time, Riak_PID) -> {arrived} end)
 		end,
 		fun(_)-> 
 			meck:unload(buffer_api)
