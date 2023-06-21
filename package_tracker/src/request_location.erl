@@ -69,7 +69,7 @@ req_loc(Package_id)-> gen_server:call(?MODULE, {request_location,{Package_id}}).
 %% @end
 %%--------------------------------------------------------------------
 init([]) ->
-	riakc_pb_socket:start_link("rdb.fordark.org", 8087). % TODO change
+	riakc_pb_socket:start_link("198.199.84.9", 8087). % TODO change
 %%--------------------------------------------------------------------
 %% @private
 %% @doc

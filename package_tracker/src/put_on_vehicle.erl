@@ -69,7 +69,7 @@ put(Package_id, Vehicle_id, Time)-> gen_server:call(?MODULE, {put_on_vehicle, {P
 %% @end
 %%--------------------------------------------------------------------
 init([]) ->
-	riakc_pb_socket:start_link("rdb.fordark.org", 8087). %TODO change; this is where th RIAK PID comes forom, right?
+	riakc_pb_socket:start_link("198.199.84.9", 8087). %TODO change; this is where th RIAK PID comes forom, right?
 %%--------------------------------------------------------------------
 %% @private
 %% @doc

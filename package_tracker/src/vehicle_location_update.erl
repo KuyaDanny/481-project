@@ -69,7 +69,7 @@ update(Vehicle_id, Latitude, Longitude)-> gen_server:cast(?MODULE, {vehicle_loca
 %% @end
 %%--------------------------------------------------------------------
 init([]) ->
-	riakc_pb_socket:start_link("rdb.fordark.org", 8087). % TODO change
+	riakc_pb_socket:start_link("198.199.84.9", 8087). % TODO change
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
