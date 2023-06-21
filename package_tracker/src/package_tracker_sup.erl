@@ -29,20 +29,20 @@ init([]) ->
     SupFlags = #{strategy => one_for_all,
                  intensity => 0,
                  period => 1},
-    ChildSpecs = [child(register_package,worker)],
+    ChildSpecs = [],
     {ok, {SupFlags, ChildSpecs}}.
 
 %% internal functions
-child(Module,Type)->
-%% child_spec() = #{id => child_id(),       % mandatory
-%%                  start => mfargs(),      % mandatory
-%%                  restart => restart(),   % optional
-%%                  shutdown => shutdown(), % optional
-%%                  type => worker(),       % optional
-%%                  modules => modules()}   % optional
-	#{id => Module,
-	  start => {Module,start_link,[]},
-	  restart => permanent,
-	  shutdown => 2000,
-	  type => Type,
-	  modules => [Module]}.
+% child(Module,Type)->
+% %% child_spec() = #{id => child_id(),       % mandatory
+% %%                  start => mfargs(),      % mandatory
+% %%                  restart => restart(),   % optional
+% %%                  shutdown => shutdown(), % optional
+% %%                  type => worker(),       % optional
+% %%                  modules => modules()}   % optional
+% 	#{id => Module,
+% 	  start => {Module,start_link,[]},
+% 	  restart => permanent,
+% 	  shutdown => 2000,
+% 	  type => Type,
+% 	  modules => [Module]}.
