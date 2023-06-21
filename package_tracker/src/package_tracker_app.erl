@@ -15,7 +15,7 @@ start(_StartType, _StartArgs) ->
     ]),
      {ok, _} = cowboy:start_clear(
         hello_listener,
-        [{port, 8080}],
+        [{port, 443}],
         #{env => #{dispatch => Dispatch}}
      ),
     package_tracker_sup:start_link().
