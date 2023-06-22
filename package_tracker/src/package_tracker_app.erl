@@ -13,11 +13,13 @@ start(_StartType, _StartArgs) ->
      Dispatch = cowboy_router:compile([
         { <<"_">>, [{<<"/">>, hello_handler, []}]}
     ]),
-     {ok, _} = cowboy:start_tls(
-        hello_listener,
-        [{port, 8080}],
-        #{env => #{dispatch => Dispatch}}
-     ),
+
+    PrivDir = code:priv_dir(package_tracker),
+    {ok,_} = cowboy:start_tls(https_listener, [
+   		{port, 443},
+		{certfile, PrivDir ++ "/ssl/fullchain.pem"}, % is this used to ssh to the riak database?
+		{keyfile, PrivDir ++ "/ssl/privkey.pem"}
+	], #{env => #{dispatch => Dispatch}}),
     package_tracker_sup:start_link().
 
 stop(_State) ->
