@@ -16,7 +16,7 @@ start(_StartType, _StartArgs) ->
 
     PrivDir = code:priv_dir(package_tracker),
     {ok,_} = cowboy:start_tls(https_listener, [
-   		{port, 443},
+   		{port, 8080},
 		{certfile, PrivDir ++ "/ssl/fullchain.pem"}, % is this used to ssh to the riak database?
 		{keyfile, PrivDir ++ "/ssl/privkey.pem"}
 	], #{env => #{dispatch => Dispatch}}),
