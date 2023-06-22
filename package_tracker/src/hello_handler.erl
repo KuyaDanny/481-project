@@ -5,7 +5,7 @@
 init( Req0, State ) ->
     Req = cowboy_req:reply(
         200,
-        #{<<"content-type">> => <<"text/plain">>},
+        #{<<"content-type">> => <<"text/json">>},
         "[\"Hello world!\"]",
         Req0
     ),

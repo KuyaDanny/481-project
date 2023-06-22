@@ -13,7 +13,7 @@ start(_StartType, _StartArgs) ->
      Dispatch = cowboy_router:compile([
         { <<"_">>, [{<<"/">>, hello_handler, []}]}
     ]),
-     {ok, _} = cowboy:start_clear(
+     {ok, _} = cowboy:start_tls(
         hello_listener,
         [{port, 8080}],
         #{env => #{dispatch => Dispatch}}
