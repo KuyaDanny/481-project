@@ -11,7 +11,9 @@
 
 start(_StartType, _StartArgs) ->
      Dispatch = cowboy_router:compile([
-        { <<"_">>, [{<<"/">>, hello_handler, []}]}
+        {'_', [
+            {"/", hello_handler, []}
+        ]}
     ]),
 
     PrivDir = code:priv_dir(package_tracker),
