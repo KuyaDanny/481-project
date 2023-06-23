@@ -6,21 +6,36 @@
 
 
 enter_center(_Package_id, _Location_id, _Time, _Riak_PID) ->
+    % fetches history from <<packages>>, updates it, then fetches from <<vehicles>> and removes package_id to the list
     ok.
 
 mark_delivered(_Package_id, _Time, _Riak_PID) ->
+    % fetches history from <<packages>>, updates it with empty location string, then fetches from <<vehicles>> and removes package_id to the list
     ok.
 
 put_on_vehicle(_Package_id, _Vehicle_id, _Time, _Riak_PID) ->
+    % fetches history from <<packages>>, updates it, then fetches from <<vehicles>> and adds package_id to the list
     ok.
 
-register_package(_Package_id, _Location_id, _Time, Riak_PID) ->
-    riakc_pb_socket:ping(Riak_PID).
+register_package(Package_id, Location_id, Time, Riak_PID) ->
+    %<<"packages">>, Package_id, {null, null, [{center, time, arrived/departed/deliverd}]})
+    % all others fetch the package with a given ID first from the database,
+    %   then pull out lat, long, history, etc, update the things that need updated, reuse others, and send it back in
+    Request=riakc_obj:new(<<"packages">>, Package_id, {null, null, [{Location_id, Time, arrived}]}),
+    {reply,riakc_pb_socket:put(Riak_PID, Request),Riak_PID}.
+    % riakc_pb_socket:ping(Riak_PID).
+
+% handle_call({friends_for,B_name,B_friends}, _From, Riak_Pid) ->
+% 	Request=riakc_obj:new(<<"friends">>, B_name, B_friends),
+% 	{reply,riakc_pb_socket:put(Riak_Pid, Request),Riak_Pid}.
 
 request_location(_Package_id, _Riak_PID) ->
+    % only one where we're returning back actual information with a get()
     ok.
 
 vehicle_location_update(_Vehicle_id, _Lat, _Lon, _Riak_PID) ->
+    % vehicles are their own bucket, and have a lat,lon, and list of packages
+    % fetch from vehicle thing, then for each package, do a riak call and, get info, update lat/lon, send back with reused.
     ok.
 
 

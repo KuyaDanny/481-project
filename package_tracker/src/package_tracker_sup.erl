@@ -29,7 +29,12 @@ init([]) ->
     SupFlags = #{strategy => one_for_all,
                  intensity => 0,
                  period => 1},
-    ChildSpecs = [child(register_package,worker)],
+    ChildSpecs = [child(register_package,worker),
+                    child(put_on_vehicle, worker),
+                    child(enter_center, worker),
+                    child(mark_delivered, worker),
+                    child(vehicle_location_update, worker),
+                    child(request_location, worker)],
     {ok, {SupFlags, ChildSpecs}}.
 
 %% internal functions
