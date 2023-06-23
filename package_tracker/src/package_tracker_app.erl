@@ -12,7 +12,8 @@
 start(_StartType, _StartArgs) ->
      Dispatch = cowboy_router:compile([
         {'_', [
-            {"/", hello_handler, []}
+            {"/", hello_handler, []},
+            {"/rpackage",register_package,[]}
         ]}
     ]),
 
