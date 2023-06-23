@@ -1,5 +1,5 @@
 -module(enter_center_h).
-
+-behaviour(cowboy_handler).
 -export([init/2]).
 
 

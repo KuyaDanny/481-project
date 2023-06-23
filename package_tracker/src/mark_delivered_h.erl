@@ -1,0 +1,3 @@
+-module(mark_delivered_h).
+-behaviour(cowboy_handler).
+-export([init/2]).

@@ -1,5 +1,5 @@
 -module(register_package_h).
-
+-behaviour(cowboy_handler).
 -export([init/2]).
 
 
