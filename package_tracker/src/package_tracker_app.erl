@@ -13,7 +13,8 @@ start(_StartType, _StartArgs) ->
      Dispatch = cowboy_router:compile([
         {'_', [
             {"/", hello_handler, []},
-            {"/rpackage",register_package_h,[]}
+            {"/rpackage",register_package_h,[]}, % might work we get a 500 error so maybe stuff with the riak database
+            {"/ecenter",enter_center_h,[]}
         ]}
     ]),
 
