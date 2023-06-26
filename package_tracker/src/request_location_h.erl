@@ -38,9 +38,9 @@ encode_helper(Package_Data) ->
 
     % history needs mapped to be json objects, not tuple
     History_convert_fun = fun({Location_id, Time, Status}) ->
-        #{<<"location_id">> => <<Location_id>>, <<"time">> => Time, <<"Status">> => <<Status>>}
+        #{<<"location_id">> => Location_id, <<"time">> => Time, <<"Status">> => <<Status>>}
         end,
-    Revised_history = lists:map(History, History_convert_fun),
+    Revised_history = lists:map(History_convert_fun, History),
     Response = #{<<"lat">> => Revised_lat,
                 <<"lon">> => Revised_lon,
                 "history" => Revised_history},
