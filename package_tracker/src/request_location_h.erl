@@ -7,10 +7,13 @@ init(Req0, Opts) ->
 
 	{ok,Data,_} = cowboy_req:read_body(Req0),
 	Package_id = helper(jsx:decode(Data)),
-	Package_info = jsx:encode(request_location:req_loc(Package_id)),
+	Package_data = request_location:req_loc(Package_id),
+    io:format(Package_data),
+    Response_Data = jsx:encode(term_to_binary(Package_data)),
+    io:format(Response_Data),
 	Req = cowboy_req:reply(200, #{
 		<<"content-type">> => <<"text/json">>
-	}, Package_info, Req0),
+	}, Response_Data, Req0),
 	{ok, Req, Opts}.
 
 helper(Data) ->
