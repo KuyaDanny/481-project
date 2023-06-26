@@ -43,13 +43,16 @@ register_package(Package_id, Location_id, Time, Riak_PID) ->
     {reply,riakc_pb_socket:put(Riak_PID, Request),Riak_PID}.
     % riakc_pb_socket:ping(Riak_PID).
 
-% handle_call({friends_for,B_name,B_friends}, _From, Riak_Pid) ->
-% 	Request=riakc_obj:new(<<"friends">>, B_name, B_friends),
-% 	{reply,riakc_pb_socket:put(Riak_Pid, Request),Riak_Pid}.
-
-request_location(_Package_id, _Riak_PID) ->
+request_location(Package_id, Riak_PID) ->
     % only one where we're returning back actual information with a get()
-    ok.
+    Package_Data = case riakc_pb_socket:get(Riak_PID, <<"packages">>, Package_id) of 
+	    {ok,Fetched}->
+		%reply with the value as a binary, not the key nor the bucket.
+		    binary_to_term(riakc_obj:get_value(Fetched));
+	    _ ->
+		    error
+	end,
+    {reply,Package_Data,Riak_PID}.
 
 vehicle_location_update(_Vehicle_id, _Lat, _Lon, _Riak_PID) ->
     % vehicles are their own bucket, and have a lat,lon, and list of packages

@@ -89,9 +89,10 @@ init([]) ->
 %%--------------------------------------------------------------------
 handle_call({request_location,{Package_id}}, _From, Riak_PID) ->
     % //this will call buffer_api:some_function;
-    {Lat, Lon, History} = buffer_api:request_location(Package_id, Riak_PID),
-    % io:format(Result),
-    {reply, {Lat, Lon,  History}, Riak_PID}; % return all the things we want
+    % {Lat, Lon, History} = buffer_api:request_location(Package_id, Riak_PID),
+    % % io:format(Result),
+    % {reply, {Lat, Lon,  History}, Riak_PID}; % return all the things we want //leftovers from unit tests
+    buffer_api:request_location(Package_id, Riak_PID);
 
 handle_call({request_location, _Arg}, _From, Riak_PID) -> 
     {reply,bad_arg,Riak_PID};
