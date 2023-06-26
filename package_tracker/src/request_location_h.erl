@@ -36,14 +36,15 @@ encode_helper(Package_Data) ->
         _ -> term_to_binary(Lon)
     end,
 
+    io:format("~w~n", [History]),
     % history needs mapped to be json objects, not tuple
     History_convert_fun = fun({Location_id, Time, Status}) ->
-        #{<<"location_id">> => Location_id, <<"time">> => Time, <<"Status">> => <<Status>>}
+        #{<<"location_id">> => Location_id, <<"time">> => Time, <<"status">> => Status}
         end,
     Revised_history = lists:map(History_convert_fun, History),
     Response = #{<<"lat">> => Revised_lat,
                 <<"lon">> => Revised_lon,
-                "history" => Revised_history},
+                <<"history">> => Revised_history},
 
     Response.
 
