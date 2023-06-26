@@ -7,7 +7,7 @@ init(Req0, Opts) ->
 	{ok,Data,_} = cowboy_req:read_body(Req0),
 	{Package_id, Location_id, Time} = helper(jsx:decode(Data)), 
 
-    Package_Data = get_package_server:get_info(Package_id),
+    % Package_Data = get_package_server:get_info(Package_id),
 
     % case is_map(Package_Data) of
     %     true ->
