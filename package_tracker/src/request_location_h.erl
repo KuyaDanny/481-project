@@ -29,11 +29,11 @@ encode_helper(Package_Data) ->
 
     Revised_lat = case is_integer(Lat) or is_float(Lat) of
         true -> Lat;
-        _ -> <<Lat>>
+        _ -> term_to_binary(Lat)
     end,
     Revised_lon = case is_integer(Lon) or is_float(Lon) of
         true -> Lon;
-        _ -> <<Lon>>
+        _ -> term_to_binary(Lon)
     end,
 
     % history needs mapped to be json objects, not tuple
