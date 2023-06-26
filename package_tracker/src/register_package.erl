@@ -89,8 +89,9 @@ init([]) ->
 %%--------------------------------------------------------------------
 handle_call({register,{Package_id, Location_id, Time}}, _From, Riak_PID) ->
     % //this will call buffer_api:some_function;
-    {Result} = buffer_api:register_package(Package_id, Location_id, Time, Riak_PID),
-    {reply, Result, Riak_PID}; % return all the things we want. {reply, registered, Riak_Pid}
+    % {Result} = buffer_api:register_package(Package_id, Location_id, Time, Riak_PID),
+    % {reply, Result, Riak_PID}; % return all the things we want. {reply, registered, Riak_Pid}
+    buffer_api:register_package(Package_id, Location_id, Time, Riak_PID);
 
 handle_call({register, _Arg}, _From, Riak_PID) -> 
     {reply,bad_arg,Riak_PID};

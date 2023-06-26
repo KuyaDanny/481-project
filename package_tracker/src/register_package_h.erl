@@ -6,7 +6,6 @@
 init(Req0, Opts) ->
 
 	{ok,Data,_} = cowboy_req:read_body(Req0),
-	io:format(Data),
 	{Package_id, Location_id, Time} = helper(jsx:decode(Data)), % binary to term?
 	% #{<<"Package_id">> => Package_id_bin, <<"Location_id">> => Location_id_bin, <<"Time">> => Time} = jsx:decode(Data),
     % it's a record, not a dict.
