@@ -7,7 +7,9 @@ init(Req0, Opts) ->
 
 	{ok,Data,_} = cowboy_req:read_body(Req0),
 	io:format(Data),
-	[Package_id, Location_id, Time|_] = jsx:decode(Data),
+	[Package_id, Location_id, Time|_] = binary_to_term(jsx:decode(Data)), % binary to term?
+	% #{<<"Package_id">> => }
+    % [Package_id, Location_id, Time|_] = jsx:decode(Data), % binary to term?
 	register_package:register(Package_id, Location_id, Time),
 	Req = cowboy_req:reply(200, #{
 		<<"content-type">> => <<"text/json">>
