@@ -39,7 +39,7 @@ register_package(Package_id, Location_id, Time, Riak_PID) ->
     %<<"packages">>, Package_id, {lat, lon, [{center, time, arrived/departed/deliverd}]})
     % all others fetch the package with a given ID first from the database,
     %   then pull out lat, long, history, etc, update the things that need updated, reuse others, and send it back in
-    Request=riakc_obj:new(<<"packages">>, Package_id, {null, null, [{Location_id, Time, arrived}]}),
+    Request=riakc_obj:new(<<"packages">>, Package_id, {"null", "null", [{Location_id, Time, arrived}]}),
     {reply,riakc_pb_socket:put(Riak_PID, Request),Riak_PID}.
     % riakc_pb_socket:ping(Riak_PID).
 
