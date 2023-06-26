@@ -89,8 +89,9 @@ init([]) ->
 %%--------------------------------------------------------------------
 handle_call({enter_center,{Package_id, Location_id, Time}}, _From, Riak_PID) ->
     % //this will call buffer_api:some_function;
-    {Result} = buffer_api:enter_center(Package_id, Location_id, Time, Riak_PID),
-    {reply, Result, Riak_PID}; % return all the things we want. {reply, registered, Riak_Pid}
+    % {Result} = buffer_api:enter_center(Package_id, Location_id, Time, Riak_PID),
+    % {reply, Result, Riak_PID}; % return all the things we want. {reply, registered, Riak_Pid} //leftovers from unit tests
+    buffer_api:enter_center(Package_id, Location_id, Time, Riak_PID);
 
 handle_call({enter_center, _Arg}, _From, Riak_PID) -> 
     {reply,bad_arg,Riak_PID};
@@ -164,7 +165,7 @@ handle_call_test_() ->
     {setup,
         fun()-> 
 			meck:new(buffer_api),
-			meck:expect(buffer_api, enter_center, fun(Package_id, Location_id, Time, Riak_PID) -> {arrived} end)
+			meck:expect(buffer_api, enter_center, fun(Package_id, Location_id, Time, Riak_PID) -> {reply, ok, some_riak_pid} end)
 		end,
 		fun(_)-> 
 			meck:unload(buffer_api)

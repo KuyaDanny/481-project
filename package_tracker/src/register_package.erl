@@ -89,7 +89,7 @@ init([]) ->
 %%--------------------------------------------------------------------
 handle_call({register,{Package_id, Location_id, Time}}, _From, Riak_PID) ->
     % //this will call buffer_api:some_function;
-    % {Result} = buffer_api:register_package(Package_id, Location_id, Time, Riak_PID),
+    % {Result} = buffer_api:register_package(Package_id, Location_id, Time, Riak_PID), //leftover from unit test meck stuff
     % {reply, Result, Riak_PID}; % return all the things we want. {reply, registered, Riak_Pid}
     buffer_api:register_package(Package_id, Location_id, Time, Riak_PID);
 
