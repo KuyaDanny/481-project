@@ -42,9 +42,39 @@ enter_center(Package_id, Location_id, Time, Riak_PID) ->
     % Request=riakc_obj:new(<<"packages">>, Package_id, {null, null, [{Location_id, Time, arrived}]}),
     {reply,Reply,Riak_PID}.
 
-mark_delivered(_Package_id, _Time, _Riak_PID) ->
+mark_delivered(Package_id, Time, Riak_PID) ->
     % fetches history from <<packages>>, updates it with empty location string, then fetches from <<vehicles>> and removes package_id to the list
-    ok.
+    Package_Data = case riakc_pb_socket:get(Riak_PID, <<"packages">>, Package_id) of 
+	    {ok,Fetched}->
+		%reply with the value as a binary, not the key nor the bucket.
+		    binary_to_term(riakc_obj:get_value(Fetched));
+	    _ ->
+		    error
+	end,
+
+    Reply = case Package_Data of
+        {Lat, Lon, Current_vehicle, History} ->
+            Request=riakc_obj:new(<<"packages">>, Package_id, {Lat, Lon, not_on_vehicle, History++[{"Destination", Time, delivered}]}),
+            riakc_pb_socket:put(Riak_PID, Request),
+            Vehicle_Data = case riakc_pb_socket:get(Riak_PID, <<"vehicles">>, Current_vehicle) of
+                {ok, Retrieved} ->
+                    binary_to_term(riakc_obj:get_value(Retrieved));
+                _ ->
+                    error
+                end,
+
+            Vehicle_reply = case Vehicle_Data of 
+                {Packages} ->
+                    Vehicle_request=riakc_obj:new(<<"vehicles">>, Current_vehicle, {Packages--[Package_id]}),
+                    riakc_pb_socket:put(Riak_PID, Vehicle_request);
+                error ->
+                    error
+                end;
+        error ->
+            error
+        end,
+    
+    {reply,Reply,Riak_PID}.
 
 put_on_vehicle(Package_id, Vehicle_id, Time, Riak_PID) ->
     % fetches history from <<packages>>, updates it, then fetches from <<vehicles>> and adds package_id to the list
@@ -73,9 +103,6 @@ put_on_vehicle(Package_id, Vehicle_id, Time, Riak_PID) ->
                     Vehicle_request=riakc_obj:new(<<"vehicles">>, Vehicle_id, {Packages++[Package_id]}),
                     riakc_pb_socket:put(Riak_PID, Vehicle_request);
                 error ->
-                    io:format("~w~n", [Vehicle_Data]),
-                    io:format("~w~n", [Vehicle_id]),
-                    io:format("~w~n", [Package_id]),
                     Vehicle_request=riakc_obj:new(<<"vehicles">>, Vehicle_id, {[Package_id]}),
                     riakc_pb_socket:put(Riak_PID, Vehicle_request)
                 end;
