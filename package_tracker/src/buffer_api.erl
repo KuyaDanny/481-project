@@ -57,7 +57,7 @@ request_location(Package_id, Riak_PID) ->
 vehicle_location_update(_Vehicle_id, _Lat, _Lon, _Riak_PID) ->
     % vehicles are their own bucket, and have a lat,lon, and list of packages
     % fetch from vehicle thing, then for each package, do a riak call and, get info, update lat/lon, send back with reused.
-    ok.
+    ok. % use this to also detach package from vehicle? Maybe track current vehicle in packages riak?
 
 % anything else we might need for those transactions that make calls to riak twice
 
