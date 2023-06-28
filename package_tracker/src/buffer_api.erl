@@ -18,8 +18,8 @@ enter_center(Package_id, Location_id, Time, Riak_PID) ->
 
     Reply = case Package_Data of
         {Lat, Lon, Current_vehicle, History} ->
-            io:format("~w~n", [Lat]),
-            io:format("~w~n", [Lon]),
+            % io:format("~w~n", [Lat]),
+            % io:format("~w~n", [Lon]),
             Request=riakc_obj:new(<<"packages">>, Package_id, {Lat, Lon, not_on_vehicle, History++[{Location_id, Time, arrived}]}),
             riakc_pb_socket:put(Riak_PID, Request),
 
