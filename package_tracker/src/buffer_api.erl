@@ -30,8 +30,8 @@ enter_center(Package_id, Location_id, Time, Riak_PID) ->
 
             Vehicle_reply = case Vehicle_Data of 
                 {Packages} ->
-                    Request=riakc_obj:new(<<"vehicles">>, Current_vehicle, {Packages--[Package_id]}),
-                    riakc_pb_socket:put(Riak_PID, Request);
+                    Vehicle_request=riakc_obj:new(<<"vehicles">>, Current_vehicle, {Packages--[Package_id]}),
+                    riakc_pb_socket:put(Riak_PID, Vehicle_request);
                 error ->
                     error
                 end;
@@ -68,17 +68,17 @@ put_on_vehicle(Package_id, Vehicle_id, Time, Riak_PID) ->
                     error
                 end,
 
-                Vehicle_reply = case Vehicle_Data of 
-                    {Packages} ->
-                        Request=riakc_obj:new(<<"vehicles">>, Vehicle_id, {Packages++[Package_id]}),
-                        riakc_pb_socket:put(Riak_PID, Request);
-                    error ->
-                        io:format("~w~n", [Vehicle_Data]),
-                        io:format("~w~n", [Vehicle_id]),
-                        io:format("~w~n", [Package_id]),
-                        Request=riakc_obj:new(<<"vehicles">>, Vehicle_id, {[Package_id]}),
-                        riakc_pb_socket:put(Riak_PID, Request)
-                    end;
+            Vehicle_reply = case Vehicle_Data of 
+                {Packages} ->
+                    Vehicle_request=riakc_obj:new(<<"vehicles">>, Vehicle_id, {Packages++[Package_id]}),
+                    riakc_pb_socket:put(Riak_PID, Vehicle_request);
+                error ->
+                    io:format("~w~n", [Vehicle_Data]),
+                    io:format("~w~n", [Vehicle_id]),
+                    io:format("~w~n", [Package_id]),
+                    Vehicle_request=riakc_obj:new(<<"vehicles">>, Vehicle_id, {[Package_id]}),
+                    riakc_pb_socket:put(Riak_PID, Vehicle_request)
+                end;
         error ->
             error
         end,
