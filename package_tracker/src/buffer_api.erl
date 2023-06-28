@@ -17,9 +17,24 @@ enter_center(Package_id, Location_id, Time, Riak_PID) ->
 	end,
 
     Reply = case Package_Data of
-        {Lat, Lon, History} ->
-            Request=riakc_obj:new(<<"packages">>, Package_id, {Lat, Lon, History++[{Location_id, Time, arrived}]}),
-            riakc_pb_socket:put(Riak_PID, Request);
+        {Lat, Lon, Current_vehicle, History} ->
+            Request=riakc_obj:new(<<"packages">>, Package_id, {Lat, Lon, not_on_vehicle, History++[{Location_id, Time, arrived}]}),
+            riakc_pb_socket:put(Riak_PID, Request),
+
+            Vehicle_Data = case riakc_pb_socket:get(Riak_PID, <<"vehicles">>, Current_vehicle) of
+                {ok, Retrieved} ->
+                    binary_to_term(riakc_obj:get_value(Retrieved));
+                _ ->
+                    error
+                end,
+
+            Vehicle_reply = case Vehicle_Data of 
+                {Packages} ->
+                    Request=riakc_obj:new(<<"vehicles">>, Current_vehicle, {Packages--[Package_id]}),
+                    riakc_pb_socket:put(Riak_PID, Request);
+                error ->
+                    error
+                end;
         error ->
             error
         end,
@@ -31,15 +46,47 @@ mark_delivered(_Package_id, _Time, _Riak_PID) ->
     % fetches history from <<packages>>, updates it with empty location string, then fetches from <<vehicles>> and removes package_id to the list
     ok.
 
-put_on_vehicle(_Package_id, _Vehicle_id, _Time, _Riak_PID) ->
+put_on_vehicle(Package_id, Vehicle_id, Time, Riak_PID) ->
     % fetches history from <<packages>>, updates it, then fetches from <<vehicles>> and adds package_id to the list
-    ok.
+    Package_Data = case riakc_pb_socket:get(Riak_PID, <<"packages">>, Package_id) of 
+	    {ok,Fetched}->
+		%reply with the value as a binary, not the key nor the bucket.
+		    binary_to_term(riakc_obj:get_value(Fetched));
+	    _ ->
+		    error
+	end,
+
+    Reply = case Package_Data of
+        {Lat, Lon, _, History} ->
+            {Location_id, _, _} = lists:last(History),
+            Request=riakc_obj:new(<<"packages">>, Package_id, {Lat, Lon, Vehicle_id, History++[{Location_id, Time, departed}]}),
+            riakc_pb_socket:put(Riak_PID, Request),
+            Vehicle_Data = case riakc_pb_socket:get(Riak_PID, <<"vehicles">>, Vehicle_id) of
+                {ok, Retrieved} ->
+                    binary_to_term(riakc_obj:get_value(Retrieved));
+                _ ->
+                    error
+                end,
+
+                Vehicle_reply = case Vehicle_Data of 
+                    {History} ->
+                        Request=riakc_obj:new(<<"vehicles">>, Vehicle_id, {History++[Package_id]}),
+                        riakc_pb_socket:put(Riak_PID, Request);
+                    error ->
+                        Request=riakc_obj:new(<<"vehicles">>, Vehicle_id, [Package_id]),
+                        riakc_pb_socket:put(Riak_PID, Request)
+                    end;
+        error ->
+            error
+        end,
+    
+    {reply,Reply,Riak_PID}.
 
 register_package(Package_id, Location_id, Time, Riak_PID) ->
     %<<"packages">>, Package_id, {lat, lon, [{center, time, arrived/departed/deliverd}]})
     % all others fetch the package with a given ID first from the database,
     %   then pull out lat, long, history, etc, update the things that need updated, reuse others, and send it back in
-    Request=riakc_obj:new(<<"packages">>, Package_id, {null, null, "none", [{Location_id, Time, arrived}]}),
+    Request=riakc_obj:new(<<"packages">>, Package_id, {null, null, not_on_vehicle, [{Location_id, Time, arrived}]}),
     {reply,riakc_pb_socket:put(Riak_PID, Request),Riak_PID}.
     % riakc_pb_socket:ping(Riak_PID).
 
@@ -55,6 +102,9 @@ request_location(Package_id, Riak_PID) ->
     {reply,Package_Data,Riak_PID}.
 
 vehicle_location_update(_Vehicle_id, _Lat, _Lon, _Riak_PID) ->
+
+    % case currentVehicle of
+    %     not_on_vehicle -> end?
     % vehicles are their own bucket, and have a lat,lon, and list of packages
     % fetch from vehicle thing, then for each package, do a riak call and, get info, update lat/lon, send back with reused.
     ok. % use this to also detach package from vehicle? Maybe track current vehicle in packages riak?
