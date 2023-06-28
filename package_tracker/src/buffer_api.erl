@@ -131,13 +131,47 @@ request_location(Package_id, Riak_PID) ->
 	end,
     {reply,Package_Data,Riak_PID}.
 
-vehicle_location_update(_Vehicle_id, _Lat, _Lon, _Riak_PID) ->
-
+vehicle_location_update(Vehicle_id, Lat, Lon, Riak_PID) ->
     % case currentVehicle of
     %     not_on_vehicle -> end?
     % vehicles are their own bucket, and have a lat,lon, and list of packages
     % fetch from vehicle thing, then for each package, do a riak call and, get info, update lat/lon, send back with reused.
-    ok. % use this to also detach package from vehicle? Maybe track current vehicle in packages riak?
+    Vehicle_Data = case riakc_pb_socket:get(Riak_PID, <<"vehicles">>, Vehicle_id) of
+        {ok, Retrieved} ->
+            binary_to_term(riakc_obj:get_value(Retrieved));
+        _ ->
+            error
+        end,
+        
+    UpdateLatLonFun = fun (Package_id) ->
+        ok,
+        Package_Data = case riakc_pb_socket:get(Riak_PID, <<"packages">>, Package_id) of 
+	        {ok,Fetched}->
+		    %reply with the value as a binary, not the key nor the bucket.
+		        binary_to_term(riakc_obj:get_value(Fetched));
+	        _ ->
+		        error
+	        end,
+        
+        Reply = case Package_Data of
+            {_, _, Vehicle_id, History} ->
+                Request=riakc_obj:new(<<"packages">>, Package_id, {Lat, Lon, Vehicle_id, History}),
+                riakc_pb_socket:put(Riak_PID, Request);
+            error ->
+                error
+            end
+    end,
+
+    Vehicle_reply = case Vehicle_Data of 
+        {Packages} ->
+            lists:map(UpdateLatLonFun, Packages),
+            done;
+        error ->
+            error
+        end,
+
+    {noreply, Riak_PID}.
+
 
 % anything else we might need for those transactions that make calls to riak twice
 
