@@ -69,8 +69,8 @@ put_on_vehicle(Package_id, Vehicle_id, Time, Riak_PID) ->
                 end,
 
                 Vehicle_reply = case Vehicle_Data of 
-                    {History} ->
-                        Request=riakc_obj:new(<<"vehicles">>, Vehicle_id, {History++[Package_id]}),
+                    {Packages} ->
+                        Request=riakc_obj:new(<<"vehicles">>, Vehicle_id, {Packages++[Package_id]}),
                         riakc_pb_socket:put(Riak_PID, Request);
                     error ->
                         Request=riakc_obj:new(<<"vehicles">>, Vehicle_id, {[Package_id]}),
