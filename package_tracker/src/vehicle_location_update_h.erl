@@ -7,7 +7,7 @@ init(Req0, Opts) ->
 
 	{ok,Data,_} = cowboy_req:read_body(Req0),
 	{Vehicle_id, Latitude, Longitude} = helper(jsx:decode(Data)),
-    io:format("~w~n", [Vehicle_id]),
+    io:format("~w~n", [binary_to_term(Vehicle_id)]),
     io:format("~w~n", [Latitude]),
     io:format("~w~n", [Longitude]),
 	vehicle_location_update:update(Vehicle_id, Latitude, Longitude),
