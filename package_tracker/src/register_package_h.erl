@@ -5,6 +5,7 @@
 
 init(Req0, Opts) ->
 	{ok,Data,_} = cowboy_req:read_body(Req0),
+    io:format("~w~n", [Data]),
 	{Package_id, Location_id, Time} = helper(jsx:decode(Data)), 
 
     % Package_Data = get_package_server:get_info(Package_id)
