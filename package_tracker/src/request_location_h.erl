@@ -27,11 +27,11 @@ decode_helper(Data) ->
 encode_helper(Package_Data) ->
     {Lat, Lon, _, History} = Package_Data,
 
-    Revised_lat = case is_integer(Lat) or is_float(Lat) or Lat == null of
+    Revised_lat = case is_integer(Lat) or is_float(Lat) of
         true -> Lat;
         _ -> term_to_binary(Lat)
     end,
-    Revised_lon = case is_integer(Lon) or is_float(Lon) or Lat == null of
+    Revised_lon = case is_integer(Lon) or is_float(Lon) of
         true -> Lon;
         _ -> term_to_binary(Lon)
     end,
