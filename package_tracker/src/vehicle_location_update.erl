@@ -102,9 +102,9 @@ handle_call(stop, _From, _State) ->
 %%                                  {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_cast({vehicle_location_update, {Vehicle_id, Lat, Lon}}, Riak_PID) when is_list(Vehicle_id) 
-                                                                        andalso is_number(Lat) 
-                                                                        andalso is_number(Lon) ->
+handle_cast({vehicle_location_update, {Vehicle_id, Lat, Lon}}, Riak_PID)  -> % when is_list(Vehicle_id) 
+                                                                        %andalso is_number(Lat) 
+                                                                        %andalso is_number(Lon)
     % {_Result} = buffer_api:vehicle_location_update(Vehicle_id, Lat, Lon, Riak_PID),
     % {noreply, Riak_PID};
     buffer_api:vehicle_location_update(Vehicle_id, Lat, Lon, Riak_PID);
