@@ -5,7 +5,7 @@
 init(Req0, Opts) ->
 
 	{ok,Data,_} = cowboy_req:read_body(Req0),
-    io:format("mark delivered"),
+    % io:format("mark delivered"),
 	{Package_id, Time} = helper(jsx:decode(Data)),
 	mark_delivered:mark(Package_id,Time),
 	Req = cowboy_req:reply(200, #{

@@ -6,7 +6,7 @@
 init(Req0, Opts) ->
 
 	{ok,Data,_} = cowboy_req:read_body(Req0),
-    io:format("vehicle location update"),
+    % io:format("vehicle location update"),
 	{Vehicle_id, Latitude, Longitude} = helper(jsx:decode(Data)),
 	vehicle_location_update:update(Vehicle_id, Latitude, Longitude),
 	Req = cowboy_req:reply(200, #{

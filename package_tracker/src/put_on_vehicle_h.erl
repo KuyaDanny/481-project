@@ -5,7 +5,7 @@
 init(Req0, Opts) ->
 
 	{ok,Data,_} = cowboy_req:read_body(Req0),
-    io:format("put on vehicle"),
+    % io:format("put on vehicle"),
 	{Package_id, Vehicle_id, Time} = helper(jsx:decode(Data)),
 	put_on_vehicle:put(Package_id, Vehicle_id, Time),
 	Req = cowboy_req:reply(200, #{
