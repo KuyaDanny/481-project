@@ -25,9 +25,9 @@ init(Req0, Opts) ->
 
 helper(Data) ->
     try
-        {_,Package_id} = maps:find(<<"Package_id">>, Data),
-        {_,Location_id} = maps:find(<<"Location_id">>, Data),
-        {_,Time} = maps:find(<<"Time">>, Data) 
+        {_,Package_id} = maps:find(<<"package_id">>, Data),
+        {_,Location_id} = maps:find(<<"center_id">>, Data),
+        {_,Time} = maps:find(<<"timestamp">>, Data) 
         of _ -> {Package_id, Location_id, Time}
     catch
         _:_ -> {error, error, error}

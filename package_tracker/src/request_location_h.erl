@@ -19,7 +19,7 @@ init(Req0, Opts) ->
 
 decode_helper(Data) ->
     try
-        {_,Package_id} = maps:find(<<"Package_id">>, Data)
+        {_,Package_id} = maps:find(<<"package_id">>, Data)
         of _ -> Package_id
     catch
         _:_ -> error

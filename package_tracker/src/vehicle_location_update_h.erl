@@ -16,9 +16,9 @@ init(Req0, Opts) ->
 
 helper(Data) ->
     try
-        {_,Vehicle_id} = maps:find(<<"Vehicle_id">>, Data),
-        {_,Lat} = maps:find(<<"Lat">>, Data),
-        {_,Lon} = maps:find(<<"Lon">>, Data) 
+        {_,Vehicle_id} = maps:find(<<"vehicle_id">>, Data),
+        {_,Lat} = maps:find(<<"lat">>, Data),
+        {_,Lon} = maps:find(<<"lon">>, Data) 
         of _ -> {Vehicle_id, Lat, Lon}
     catch
         _:_ -> {error, error, error}
