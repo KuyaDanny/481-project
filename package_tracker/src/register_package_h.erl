@@ -5,6 +5,7 @@
 
 init(Req0, Opts) ->
 	{ok,Data,_} = cowboy_req:read_body(Req0),
+    io:format("register package"),
     % io:format("~w~n", [Data]),
 	{Package_id, Location_id, Time} = helper(jsx:decode(Data)), 
 
