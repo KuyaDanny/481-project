@@ -23,20 +23,23 @@ enter_center(Package_id, Location_id, Time, Riak_PID) ->
             Request=riakc_obj:new(<<"packages">>, Package_id, {Lat, Lon, not_on_vehicle, History++[{Location_id, Time, arrived}]}),
             riakc_pb_socket:put(Riak_PID, Request),
 
-            Vehicle_Data = case riakc_pb_socket:get(Riak_PID, <<"vehicles">>, Current_vehicle) of
-                {ok, Retrieved} ->
-                    binary_to_term(riakc_obj:get_value(Retrieved));
-                _ ->
-                    error
-                end,
+            case Current_vehicle of
+                not_on_vehicle -> error;
+                _ -> Vehicle_Data = case riakc_pb_socket:get(Riak_PID, <<"vehicles">>, Current_vehicle) of
+                        {ok, Retrieved} ->
+                            binary_to_term(riakc_obj:get_value(Retrieved));
+                        _ ->
+                            error
+                        end,
 
-            Vehicle_reply = case Vehicle_Data of 
-                {Packages} ->
-                    Vehicle_request=riakc_obj:new(<<"vehicles">>, Current_vehicle, {Packages--[Package_id]}),
-                    riakc_pb_socket:put(Riak_PID, Vehicle_request);
-                error ->
-                    error
-                end;
+                    Vehicle_reply = case Vehicle_Data of 
+                        {Packages} ->
+                            Vehicle_request=riakc_obj:new(<<"vehicles">>, Current_vehicle, {Packages--[Package_id]}),
+                            riakc_pb_socket:put(Riak_PID, Vehicle_request);
+                        error ->
+                            error
+                        end
+            end;        
         error ->
             error
         end,
