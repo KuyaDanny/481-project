@@ -92,7 +92,7 @@ handle_call({request_location,{Package_id}}, _From, Riak_PID) ->
     % {Lat, Lon, History} = buffer_api:request_location(Package_id, Riak_PID),
     % % io:format(Result),
     % {reply, {Lat, Lon,  History}, Riak_PID}; % return all the things we want //leftovers from unit tests
-    io:format("request location handle call"),
+    % io:format("request location handle call"),
     buffer_api:request_location(Package_id, Riak_PID);
 
 handle_call({request_location, _Arg}, _From, Riak_PID) -> 
