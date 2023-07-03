@@ -129,13 +129,17 @@ register_package(Package_id, Location_id, Time, Riak_PID) ->
 
 request_location(Package_id, Riak_PID) ->
     % only one where we're returning back actual information with a get()
+    io:format("buffer_req_loc"),
     Package_Data = case riakc_pb_socket:get(Riak_PID, <<"packages">>, Package_id) of 
 	    {ok,Fetched}->
 		%reply with the value as a binary, not the key nor the bucket.
+            io:format("okFetched"),
 		    binary_to_term(riakc_obj:get_value(Fetched));
 	    _ ->
+            io:format("error"),
 		    error
 	end,
+    io:format("~w~n", [{reply,Package_Data,Riak_PID}]),
     {reply,Package_Data,Riak_PID}.
 
 vehicle_location_update(Vehicle_id, Lat, Lon, Riak_PID) ->
